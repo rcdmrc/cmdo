@@ -80,10 +80,7 @@ public:
   std::string program_description() const;
 
   /**
-   * @brief Parses the command line for arguments.
-   * Any options found in argv will be removed from argv, leaving only whatever
-   * was not defined in CmdLineOptions. argc will be updated to reflect these
-   * changes.
+   * @brief Parses the command line for options defined using add_required, add_optional and add_switch. 
    * @param[in] argc
    * @param[in] argv
    */
