@@ -83,6 +83,7 @@ int main(int argc, char ** argv) {
     }
 }
 ```
+In this case cmdo will check that the value of "-in" can be open for reading.
 
 Use:
 
@@ -90,4 +91,33 @@ Use:
 example -in in_file.txt -out out_file.txt
 ```
 
-In this case cmdo will check that the value of "-in" can be open for reading.
+### Error handling
+
+The default behavior is to print any errors to std::cerr, and exit the process (except for unknown options). You can have cmd do something else by setting your own ParserResultHandler.
+
+This is the default implementation of the error handler:
+```c++
+void handler(StringList const &unknownInput, StringList const &missingOptions,
+             StringList const &emptyOptions, StringList const &invalidOptions)
+{
+
+  for (std::string const &name : unknownInput) {
+    ErrorPrinter(errorStream_) << "unknown option: " + name;
+  }
+
+  for (std::string const &name : emptyOptions) {
+    ErrorPrinter(errorStream_) << "option requires an argument: " << name;
+  }
+  for (std::string const &name : invalidOptions) {
+    ErrorPrinter(errorStream_) << "invalid argument: "
+                               << name << " = " << this->get_option(name);
+  }
+  for (std::string const &name : missingOptions) {
+    ErrorPrinter(errorStream_) << "option is required: " << name;
+  }
+  if (!missingOptions.empty() || !unknownInput.empty()
+      || !invalidOptions.empty() || !emptyOptions.empty()) {
+    exit(EXIT_FAILURE);
+  }
+}
+```
