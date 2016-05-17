@@ -1,8 +1,8 @@
 # cmdo
 
-A C++ library for accessing command line options.
+[![Build Status](https://travis-ci.org/rcdmrc/cmdo.svg?branch=master)](https://travis-ci.org/rcdmrc/cmdo)
 
-by Ricardo Mauricio
+A C++ library for accessing command line options.
 
 https://github.com/rcdmrc/cmdo
 
