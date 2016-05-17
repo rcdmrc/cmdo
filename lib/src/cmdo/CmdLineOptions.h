@@ -81,10 +81,13 @@ public:
 
   /**
    * @brief Parses the command line for options defined using add_required, add_optional and add_switch. 
-   * @param[in] argc
-   * @param[in] argv
+   * @param[in] argc Number of command line argments
+   * @param[in] argv Command line arguments
+   * @param[out] left_overs Things in the command line that were not defined
+   * as options in CmdLineOptions. Strings will be added here in the same order
+   * they appear in the command line.
    */
-  void parse(int *argc, char **argv);
+  void parse(int argc, char **argv, StringList& left_overs);
 
   /**
    * @brief Defines a required argument. If the argument is not present in
@@ -217,12 +220,12 @@ private:
     void set_required(bool const &required);
 
   private:
-    std::string const name_;
-    std::string const description_;
+    std::string name_;
+    std::string description_;
     bool isSet_;
     bool isRequired_;
     T value_;
-    T const defaultValue_;
+    T defaultValue_;
   };
 
   typedef Option<std::string> StringOption;

@@ -12,7 +12,9 @@ int main(int argc, char **argv) {
   cmdo.add_switch("-super", "do the work in super mode.", false);
   cmdo.add_switch("-v", "enable verbose mode", false);
   cmdo.add_optional("-opt1", "this is optional", "5");
-  cmdo.parse(&argc, argv);
+
+  cmdo::CmdLineOptions::StringList leftOvers;
+  cmdo.parse(argc, argv, leftOvers);
 
   std::string const &inputFile = cmdo.get_option("-in");
 

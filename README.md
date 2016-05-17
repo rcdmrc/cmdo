@@ -103,11 +103,6 @@ This is the default implementation of the error handler:
 void handler(StringList const &unknownInput, StringList const &missingOptions,
              StringList const &emptyOptions, StringList const &invalidOptions)
 {
-
-  for (std::string const &name : unknownInput) {
-    // do something about unknown options
-  }
-
   for (std::string const &name : emptyOptions) {
     // do something about options which require an argument.
   }
@@ -117,8 +112,8 @@ void handler(StringList const &unknownInput, StringList const &missingOptions,
   for (std::string const &name : missingOptions) {
     // do something about options which are required, but were not provided.
   }
-  if (!missingOptions.empty() || !unknownInput.empty()
-      || !invalidOptions.empty() || !emptyOptions.empty()) {
+  if (!missingOptions.empty() || !invalidOptions.empty() 
+      || !emptyOptions.empty()) {
     exit(EXIT_FAILURE);
   }
 }

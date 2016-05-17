@@ -11,7 +11,7 @@ CmdLineOptions::CmdLineOptions(std::string const &program_description)
 }
 
 CmdLineOptions::CmdLineOptions(std::string const &program_description,
-                   std::string const &additional_args)
+                               std::string const &additional_args)
     : programDescription_(program_description), errorStream_(std::cerr),
       stdStream_(std::cout), parserResultHandler_() {
   add_switch(HELP_SWITCH_NAME, "Show program help.", false);
@@ -21,10 +21,6 @@ CmdLineOptions::CmdLineOptions(std::string const &program_description,
                                 StringList const &missingOptions,
                                 StringList const &emptyOptions,
                                 StringList const &invalidOptions) {
-    for (std::string const &name : unknownInput) {
-      ErrorPrinter(errorStream_) << "unknown option: " + name;
-    }
-
     for (std::string const &name : emptyOptions) {
       ErrorPrinter(errorStream_) << "option requires an argument: " << name;
     }
@@ -35,15 +31,17 @@ CmdLineOptions::CmdLineOptions(std::string const &program_description,
     for (std::string const &name : missingOptions) {
       ErrorPrinter(errorStream_) << "option is required: " << name;
     }
-    if (!missingOptions.empty() || !unknownInput.empty()
-        || !invalidOptions.empty() || !emptyOptions.empty()) {
+    if (!missingOptions.empty() || !invalidOptions.empty()
+        || !emptyOptions.empty()) {
       exit(EXIT_FAILURE);
     }
   };
 }
 
-void CmdLineOptions::parse(int *argc, char **argv) {
+void CmdLineOptions::parse(int argc, char **argv, StringList &left_overs) {
   std::unique_lock<std::mutex> l(mutex_);
+  left_overs.clear();
+
   auto get_nice_program_name = [argv]() -> std::string {
     std::string result = std::string(argv[0]);
     // Remove everything but the command's name.
@@ -57,11 +55,10 @@ void CmdLineOptions::parse(int *argc, char **argv) {
   };
   programName_ = get_nice_program_name();
 
-  StringList listOfUnknownOptions;
   StringList listOfOptionsWithNoValue;
-  int const n(*argc);
-  for (int i(1); i < n; ++i) {
-    int const next = (i + 1) < n ? i + 1 : -1;
+
+  for (int i(1); i < argc; ++i) {
+    int const next = (i + 1) < argc ? i + 1 : -1;
 
     std::string arg(argv[i]);
     {
@@ -86,7 +83,7 @@ void CmdLineOptions::parse(int *argc, char **argv) {
     }
 
     // not an option :/
-    listOfUnknownOptions.push_back(arg);
+    left_overs.push_back(arg);
   }
 
   // check for the help switch.
@@ -115,7 +112,7 @@ void CmdLineOptions::parse(int *argc, char **argv) {
     }
   }
 
-  parserResultHandler_(listOfUnknownOptions, listOfMissingRequiredOptions,
+  parserResultHandler_(left_overs, listOfMissingRequiredOptions,
                        listOfOptionsWithNoValue, listOfInvalidOptions);
 }
 
@@ -123,7 +120,7 @@ void CmdLineOptions::add_required(std::string const &name,
                                   std::string const &description) {
   std::unique_lock<std::mutex> l(mutex_);
 
-  if(is_arg(name) || is_switch(name)){
+  if (is_arg(name) || is_switch(name)) {
     throw OptionDefined();
   }
   std::string niceName(name);
@@ -138,7 +135,7 @@ void CmdLineOptions::add_optional(std::string const &name,
                                   std::string const &description,
                                   std::string const &default_value) {
   std::unique_lock<std::mutex> l(mutex_);
-  if(is_arg(name) || is_switch(name)){
+  if (is_arg(name) || is_switch(name)) {
     throw OptionDefined();
   }
   std::string niceName(name);
@@ -147,25 +144,26 @@ void CmdLineOptions::add_optional(std::string const &name,
 }
 
 void CmdLineOptions::add_switch(std::string const &name,
-                          std::string const &description,
-                          bool default_setting) {
+                                std::string const &description,
+                                bool default_setting) {
   std::unique_lock<std::mutex> l(mutex_);
-  if(is_arg(name) || is_switch(name)){
+  if (is_arg(name) || is_switch(name)) {
     throw OptionDefined();
   }
   std::string niceName(name);
   trim(niceName);
 
-  switchOptionList_.push_back(BoolOption(niceName, description, default_setting));
+  switchOptionList_.push_back(
+      BoolOption(niceName, description, default_setting));
 }
 
 void CmdLineOptions::attach_validator(std::string const &arg_name,
-                                CmdLineOptions::ValidatorFunction validator) {
+                                      CmdLineOptions::ValidatorFunction validator) {
   std::unique_lock<std::mutex> l(mutex_);
   if (!is_arg(arg_name)) {
     throw UndefinedOption();
   }
-  if(!validator) {
+  if (!validator) {
     throw BadFunction();
   }
 
@@ -173,9 +171,10 @@ void CmdLineOptions::attach_validator(std::string const &arg_name,
   if (it != validatorFunctionMap_.end()) {
     it->second.push_back(validator);
   } else {
-    ValidatorFunctionList list;
-    list.push_back(validator);
-    validatorFunctionMap_.insert(std::make_pair(arg_name, list));
+    ValidatorFunctionList list{validator};
+    std::pair<std::string, ValidatorFunctionList> validatorList
+        = std::make_pair(arg_name, list);
+    validatorFunctionMap_.insert(validatorList);
   }
 }
 
@@ -216,7 +215,8 @@ void printOptionList(std::ostream &out, std::vector<T> const &option_list,
       desc << ")";
     }
 
-    std::string const name = is_switch ? option.name() : option.name() + " [...]";
+    std::string const name = is_switch ? option.name() : option.name() +
+                                                         " [...]";
     out << " "
     << std::setfill(' ')
     << std::setw(2)
@@ -264,7 +264,8 @@ CmdLineOptions::ArgOptList::const_iterator CmdLineOptions::find_arg(
                       });
 }
 
-CmdLineOptions::ArgOptList::iterator CmdLineOptions::find_arg(std::string const &name) {
+CmdLineOptions::ArgOptList::iterator CmdLineOptions::find_arg(
+    std::string const &name) {
   return std::find_if(argOptionList_.begin(),
                       argOptionList_.end(),
                       [name](StringOption const &option) {
