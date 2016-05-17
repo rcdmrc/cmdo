@@ -1,0 +1,47 @@
+language: cpp
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-4.9']
+      env: COMPILER=g++-4.9
+      before_script:
+        - wget https://github.com/Viq111/travis-container-packets/releases/download/cmake-3.1.2/cmake.tar.bz2
+        - tar -xjf cmake.tar.bz2 && rm cmake.tar.bz2 && export PATH=$(pwd)/cmake/bin:$PATH
+    
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-5']
+      env:  COMPILER=g++-5
+      before_script:
+        - wget https://github.com/Viq111/travis-container-packets/releases/download/cmake-3.1.2/cmake.tar.bz2
+        - tar -xjf cmake.tar.bz2 && rm cmake.tar.bz2 && export PATH=$(pwd)/cmake/bin:$PATH
+        
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.7']
+          packages: ['clang-3.7']
+      env: COMPILER=clang++-3.7
+      before_script:
+        - wget https://github.com/Viq111/travis-container-packets/releases/download/cmake-3.1.2/cmake.tar.bz2
+        - tar -xjf cmake.tar.bz2 && rm cmake.tar.bz2 && export PATH=$(pwd)/cmake/bin:$PATH
+        
+    - os: osx
+      osx_image: xcode7.3
+      compiler: clang
+      env: COMPILER=clang++
+      before_script:
+        - brew update && brew install cmake && export PATH="/usr/local/bin:$PATH"
+
+script:
+  - mkdir build
+  - cd build
+  - CXX=$COMPILER cmake -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON .. && make -j2
