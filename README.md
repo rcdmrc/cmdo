@@ -6,25 +6,37 @@ A C++ library for accessing command line options.
 
 https://github.com/rcdmrc/cmdo
 
-## Build and Install
+## Install
+
+Quick install:
 
 ```bash
+git clone https://github.com/rcdmrc/cmdo
 mkdir cmdo-build
 cd cmdo-build
-cmake <cmdo-src> -DCMAKE_INSTALL_PREFIX=<cmdo-install-dir>
-
-make
-make install
+cmake ../cmdo -DCMAKE_INSTALL_PREFIX=<cmdo-install-dir>
+make && make install
 ```
 
-Tests aren't build by default, run cmake with -DBUILD_TESTS=ON to build unit 
-tests. Unit tests use googletest (https://github.com/google/googletest)
+To build unit tests:
+
+```bash
+git clone https://github.com/rcdmrc/cmdo
+
+# Initializes tests/thirdparty/googletest
+cd cmdo
+git submodule init && git submodule update
+cd ..
+
+mkdir cmdo-build
+cd cmdo-build
+cmake ../cmdo -DCMAKE_INSTALL_PREFIX=<cmdo-install-dir> -DBUILD_TESTS=ON
+make && make install
+```
 
 ## Examples
 
-### Short version
-
-The code:
+### Basic command line options
 
 ```c++
 #include <cmdo/CmdLineOptions.h>
@@ -34,28 +46,26 @@ The code:
 int main(int argc, char ** argv) {
     cmdo::CmdLineOptions cmdo("Program that shows you how this thing works.");
     cmdo.add_required("-in", "an input file");
-    cmdo.add_required("-out", "an output file");
     cmdo.add_switch("-super", "do the work in super mode.", false);
     cmdo.add_optional("-opt1", "this is optional", "5");
     cmdo.parse(&argc, argv);
     
     std::string const& inputFile = cmdo.get_option("-in");    
     std::string const& outputFile = cmdo.get_option("-out");
-    if(cmdo.get_switch("-super") {
+    if(cmdo.get_switch("-super")) {
         // do something in super mode.
     }
+    
+    // do some more work ...
 }
 ```
-
-Use:
+Using this example:
 
 ```bash
-example -in in_file.txt -out out_file.txt -super
+example -in in_file.txt -opt1 10
 ```
 
-### Adding validators
-
-The code:
+### Using input validators
 
 ```c++
 #include <cmdo/CmdLineOptions.h>
@@ -66,9 +76,6 @@ The code:
 int main(int argc, char ** argv) {
     cmdo::CmdLineOptions cmdo("Program that shows you how this thing works.");
     cmdo.add_required("-in", "an input file");
-    cmdo.add_required("-out", "an output file");
-    cmdo.add_switch("-super", "do the work in super mode.", false);
-    cmdo.add_optional("-opt1", "this is optional", "5");
     cmdo.attach_validator("-in", [](std::string const &name,
                                     std::string const &value) {
         return ::access(value.c_str(), R_OK) == 0;
@@ -76,19 +83,15 @@ int main(int argc, char ** argv) {
     
     cmdo.parse(&argc, argv);
     
-    std::string const& inputFile = cmdo.get_option("-in");    
-    std::string const& outputFile = cmdo.get_option("-out");
-    if(cmdo.get_switch("-super") {
-        // do something in super mode.
-    }
+    std::string const& inputFile = cmdo.get_option("-in");   
+    
+    // do some more work ...
 }
 ```
-In this case cmdo will check that the value of "-in" can be open for reading.
-
-Use:
+Using this example:
 
 ```bash
-example -in in_file.txt -out out_file.txt
+example -in in_file.txt
 ```
 
 ### Error handling
@@ -102,18 +105,17 @@ void handler(StringList const &unknownInput, StringList const &missingOptions,
 {
 
   for (std::string const &name : unknownInput) {
-    ErrorPrinter(errorStream_) << "unknown option: " + name;
+    // do something about unknown options
   }
 
   for (std::string const &name : emptyOptions) {
-    ErrorPrinter(errorStream_) << "option requires an argument: " << name;
+    // do something about options which require an argument.
   }
   for (std::string const &name : invalidOptions) {
-    ErrorPrinter(errorStream_) << "invalid argument: "
-                               << name << " = " << this->get_option(name);
+    // do something about options which were set to an invalid value (failed one or more validators).
   }
   for (std::string const &name : missingOptions) {
-    ErrorPrinter(errorStream_) << "option is required: " << name;
+    // do something about options which are required, but were not provided.
   }
   if (!missingOptions.empty() || !unknownInput.empty()
       || !invalidOptions.empty() || !emptyOptions.empty()) {
