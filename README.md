@@ -48,7 +48,9 @@ int main(int argc, char ** argv) {
     cmdo.add_required("-in", "an input file");
     cmdo.add_switch("-super", "do the work in super mode.", false);
     cmdo.add_optional("-opt1", "this is optional", "5");
-    cmdo.parse(&argc, argv);
+    
+    cmdo::CmdLineOptions::StringList leftOvers;
+    cmdo.parse(argc, argv, leftOvers);
     
     std::string const& inputFile = cmdo.get_option("-in");    
     std::string const& outputFile = cmdo.get_option("-out");
@@ -81,7 +83,8 @@ int main(int argc, char ** argv) {
         return ::access(value.c_str(), R_OK) == 0;
     });
     
-    cmdo.parse(&argc, argv);
+    cmdo::CmdLineOptions::StringList leftOvers;
+    cmdo.parse(argc, argv, leftOvers);
     
     std::string const& inputFile = cmdo.get_option("-in");   
     
